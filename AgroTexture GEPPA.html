@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AgroTexture GEPPA</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f5f0;--fg:#1c2a24;--card:rgba(255,255,255,.85);--mut:#5b6b63;--bd:#e3e1d6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a15;--fg:#eef3ef;--card:rgba(24,38,31,.85);--mut:#9db0a5;--bd:#2a3d33}}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+.card{background:var(--card);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:1rem;box-shadow:0 10px 25px -8px rgba(0,0,0,.15)}
+.mut{color:var(--mut)}
+.btn{border-radius:1rem;padding:.9rem 1.1rem;font-weight:700;background:#047857;color:#fff;transition:all .2s}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:scale(.95)}
+.btn2{background:var(--card);color:var(--fg);border:1px solid var(--bd)}
+.opt{display:block;width:100%;text-align:left;padding:1rem;border-radius:1rem;border:2px solid var(--bd);background:var(--card);font-weight:600;transition:all .2s}
+.opt:hover{transform:translateY(-2px);border-color:#047857}.opt:active{transform:scale(.97)}
+.tab{padding:.6rem 1rem;border-radius:.9rem;font-weight:700;transition:all .2s;white-space:nowrap}
+.tab.on{background:#047857;color:#fff}
+.pane{display:none}.pane.on{display:block;animation:fadeSlide .4s ease}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:none}}
+@keyframes pulse-ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.slide{animation:slideIn .35s ease}
+.ring{transform-box:fill-box;transform-origin:center;animation:pulse-ring 1.6s ease-out infinite}
+#mk{transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.zone{transition:all .3s;stroke:#fff;stroke-width:1}.zone.act{filter:brightness(1.15) saturate(1.4);stroke:#111;stroke-width:3}
+.hz{transform-origin:top;animation:grow .5s ease;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;text-shadow:0 1px 3px #000}
+#toast{position:fixed;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));transform:translate(-50%,200%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);background:#047857;color:#fff;padding:.8rem 1.4rem;border-radius:1rem;font-weight:700;z-index:50}
+#toast.show{transform:translate(-50%,0)}
+input[type=range]{width:100%;accent-color:#047857}
+input,select{background:var(--card);border:1px solid var(--bd);border-radius:.75rem;padding:.55rem .7rem;color:var(--fg);width:100%}
+</style></head>
+<body class="min-h-screen">
+<div class="max-w-4xl mx-auto p-4">
+<header class="mb-4"><h1 class="text-3xl font-extrabold text-emerald-700">🌱 AgroTexture GEPPA</h1><p class="mut text-sm">Texture du sol · triangle GEPPA (1963) · hors ligne</p></header>
+<nav class="flex gap-2 overflow-x-auto mb-4" id="tabs"></nav>
+
+<section id="p0" class="pane on"><div class="card p-5"><div class="h-2 rounded-full bg-black/10 mb-4"><div id="bar" class="h-2 rounded-full bg-emerald-600 transition-all duration-500" style="width:0"></div></div><div id="q"></div></div></section>
+
+<section id="p1" class="pane"><div class="grid md:grid-cols-2 gap-4">
+<div class="card p-4"><svg id="tri" viewBox="0 0 520 470" class="w-full"></svg></div>
+<div class="card p-5 space-y-4"><div id="sl"></div>
+<div class="flex gap-2 items-center"><button class="btn" onclick="balance()">⚖️ Équilibrer à 100 %</button><span id="sum" class="font-bold"></span></div>
+<div id="res"></div></div></div></section>
+
+<section id="p2" class="pane"><div class="grid md:grid-cols-2 gap-4">
+<div class="card p-5 space-y-3"><h2 class="font-extrabold text-lg">Nouvel horizon</h2>
+<input id="f_h" placeholder="Horizon (ex : A1)"><input id="f_d" placeholder="Profondeur (ex : 0-25 cm)"><input id="f_p" placeholder="Parcelle">
+<select id="f_t"></select>
+<button class="btn btn2" onclick="fromLab()">↙ Reprendre les % du labo</button>
+<button class="btn w-full" onclick="saveH()">💾 Enregistrer</button>
+<button class="btn btn2 w-full" onclick="csv()">📄 Exporter CSV (;)</button></div>
+<div class="card p-5"><h2 class="font-extrabold text-lg mb-2">Fosse pédologique</h2><div id="col" class="rounded-xl overflow-hidden border border-black/10"></div><div id="lst" class="mt-3 text-sm"></div></div></div></section>
+
+<section id="p3" class="pane"><div class="grid gap-4">
+<div class="card p-5"><h2 class="font-extrabold text-lg">Méthode GEPPA (1963)</h2><p class="mut mt-2">Le triangle du GEPPA classe la terre fine (&lt; 2 mm) selon sa teneur en argile (&lt; 2 µm), limons (2–50 µm) et sables (50 µm–2 mm). Les trois pourcentages totalisent 100 % et la position du point détermine la classe texturale.</p></div>
+<a class="card p-5 block hover:-translate-y-0.5 transition" href="https://inrae.fr" target="_blank" rel="noopener"><b class="text-emerald-700">INRAE — Les mots de l’agronomie</b><p class="mut text-sm">Granulométrie et diagrammes de texture</p></a>
+<a class="card p-5 block hover:-translate-y-0.5 transition" href="https://aurea.eu" target="_blank" rel="noopener"><b class="text-emerald-700">Wiki Auréa AgroSciences</b><p class="mut text-sm">Texture du sol et norme GEPPA</p></a>
+<div class="card p-5 mut text-sm">⚠️ Les polygones sont une partition calculée à partir de centres de classes : à vérifier sur le diagramme officiel avant tout usage pédagogique ou réglementaire. Valeurs de RU, battance et portance : estimations indicatives.</div></div></section>
+</div><div id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const C=[["Alo","Argile lourde",70,15,15,"#7c4a2d"],["A","Argile",48,20,32,"#a0623a"],["Al","Argile limoneuse",42,48,10,"#b98a52"],["As","Argile sableuse",40,8,52,"#c9783f"],["La","Limon argileux",28,62,10,"#c9a24a"],["Las","Limon argilo-sableux",30,42,28,"#d9b560"],["Lsa","Limon sablo-argileux",22,22,56,"#d99a52"],["L","Limon",15,55,30,"#e3c985"],["Lf","Limon fin",12,75,13,"#d6c27a"],["Ltf","Limon très fin",8,88,4,"#c8b86a"],["Ls","Limon sableux",12,35,53,"#e6d199"],["Sa","Sable argileux",20,7,73,"#e8b872"],["Sal","Sable argilo-limoneux",12,20,68,"#eac888"],["Sl","Sable limoneux",5,17,78,"#f0dca4"],["S","Sable",3,4,93,"#f6e8b8"]];
+const T=[[260,40],[40,421],[480,421]];
+const xy=(a,l,s)=>{const t=(a+l+s)||1;return[(a*T[0][0]+l*T[1][0]+s*T[2][0])/t,(a*T[0][1]+l*T[1][1]+s*T[2][1])/t]};
+const cen=C.map(c=>xy(c[2],c[3],c[4]));
+function clip(poly,c,o){const f=p=>(p[0]-o[0])**2+(p[1]-o[1])**2-(p[0]-c[0])**2-(p[1]-c[1])**2;const r=[];for(let i=0;i<poly.length;i++){const p=poly[i],q=poly[(i+1)%poly.length],fp=f(p),fq=f(q);if(fp>=0)r.push(p);if((fp>=0)!==(fq>=0)){const t=fp/(fp-fq);r.push([p[0]+t*(q[0]-p[0]),p[1]+t*(q[1]-p[1])])}}return r}
+const polys=C.map((c,i)=>{let p=T.map(v=>v.slice());cen.forEach((o,j)=>{if(j!==i)p=clip(p,cen[i],o)});return p});
+function pip(p,x,y){let r=false;for(let i=0,j=p.length-1;i<p.length;j=i++){if((p[i][1]>y)!==(p[j][1]>y)&&x<(p[j][0]-p[i][0])*(y-p[i][1])/(p[j][1]-p[i][1])+p[i][0])r=!r}return r}
+function classify(a,l,s){const t=a+l+s||1,[x,y]=xy(a/t*100,l/t*100,s/t*100);let k=polys.findIndex(p=>pip(p,x,y));if(k<0){let m=1e9;cen.forEach((c,i)=>{const d=(c[0]-x)**2+(c[1]-y)**2;if(d<m){m=d;k=i}})}return k}
+const props=(a,l,s)=>{const t=(a+l+s)||1;a=a/t*100;l=l/t*100;s=s/t*100;const cl=v=>Math.max(0,Math.min(100,v));return{ru:1+.012*l+.006*a,batt:cl(l-1.2*a+10),port:cl(100-.7*l-.4*a)}};
+const gauge=(n,v,c)=>`<div class="mb-2"><div class="flex justify-between text-sm font-semibold"><span>${n}</span><span>${Math.round(v)} %</span></div><div class="h-2.5 rounded-full bg-black/10"><div class="h-2.5 rounded-full transition-all duration-700" style="width:${v}%;background:${c}"></div></div></div>`;
+function card(k,a,l,s){const p=props(a,l,s),c=C[k];return`<div class="slide rounded-2xl p-4 border-2" style="border-color:${c[5]}"><div class="flex items-baseline gap-3"><span class="text-4xl font-extrabold" style="color:${c[5]}">${c[0]}</span><span class="font-bold">${c[1]}</span></div><div class="mut text-sm mb-3">A ${Math.round(a)} % · L ${Math.round(l)} % · S ${Math.round(s)} %</div>${gauge('Réserve utile ≈ '+p.ru.toFixed(1)+' mm/cm',Math.min(100,p.ru/2.2*100),'#047857')}${gauge('Risque de battance',p.batt,'#d97706')}${gauge('Portance',p.port,'#0369a1')}</div>`}
+const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2400)};
+
+// Onglets
+['🖐️ Test tactile','📐 Triangle (labo)','📒 Carnet','📚 Références'].forEach((n,i)=>{const b=document.createElement('button');b.className='tab'+(i?'':' on');b.textContent=n;b.onclick=()=>{document.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('on',i===j));document.querySelectorAll('.pane').forEach((x,j)=>x.classList.toggle('on',i===j))};$('tabs').appendChild(b)});
+
+// Test tactile : [question, [[libellé, suite]]], suite = nœud (nombre) ou classe (texte)
+const Q=[
+["Prenez une poignée de terre fine humidifiée. Peut-on la rouler en boule ?",[["❌ Non, elle s’effrite","S"],["✅ Oui","1"]]],
+["Quelle sensation domine entre les doigts ?",[["🏖️ Râpeuse, sableuse","2"],["🌫️ Farineuse, soyeuse, savonneuse","3"],["🧈 Collante, lisse, plastique","4"]]],
+["Sensation sableuse : peut-on former un boudin ?",[["❌ Non","Sl"],["⚠️ Fragile, se casse","Sal"],["✅ Oui, assez ferme","Sa"],["💪 Oui, il tient et se courbe","As"]]],
+["Sensation soyeuse : quel comportement ?",[["❌ Pas de boudin, très talqueux","Ltf"],["⚠️ Boudin court, fragile","Lf"],["✅ Boudin de 3 mm possible","3b"],["🏖️ Un peu de sable perceptible","Ls"]]],
+["Sensation collante : on forme un boudin de 3 mm puis un anneau. Résultat ?",[["💍 Anneau sans fissure, très collant","Alo"],["⚠️ Anneau qui fissure","A"],["🌫️ Soyeux avec argile","Al"],["🏖️ Sableux avec argile","As"]]]
+];
+Q[3][1][2][1]="La";Q[3][1][3][1]="Ls";let st=0,hist=[],last=null;
+function rq(){if(typeof st==='string'){const k=C.findIndex(c=>c[0]===st);last=k;const c=C[k];$('bar').style.width='100%';$('q').innerHTML=card(k,c[2],c[3],c[4])+'<div class="flex gap-2 mt-4"><button class="btn" onclick="st=0;hist=[];rq()">↺ Recommencer</button><button class="btn btn2" onclick="useLab('+k+')">→ Voir dans le triangle</button></div>';return}
+$('bar').style.width=(hist.length/3*100)+'%';const n=Q[st];$('q').innerHTML='<div class="slide"><h2 class="text-xl font-extrabold mb-4">'+n[0]+'</h2><div class="space-y-3">'+n[1].map((o,i)=>`<button class="opt" onclick="pick(${i})">${o[0]}</button>`).join('')+'</div></div>'}
+function pick(i){const nx=Q[st][1][i][1];hist.push(st);st=/^\d/.test(nx)?parseInt(nx):nx;rq()}
+function useLab(k){const c=C[k];v.a=c[2];v.l=c[3];v.s=c[4];upd();document.querySelectorAll('.tab')[1].click()}
+
+// Triangle
+let v={a:30,l:40,s:30};
+(function(){let h='';polys.forEach((p,i)=>{h+=`<polygon class="zone" id="z${i}" fill="${C[i][5]}" points="${p.map(q=>q.map(n=>n.toFixed(1)).join(',')).join(' ')}"/>`});
+polys.forEach((p,i)=>{const cx=p.reduce((a,q)=>a+q[0],0)/p.length,cy=p.reduce((a,q)=>a+q[1],0)/p.length;h+=`<text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="12" font-weight="800" fill="#1c2a24" pointer-events="none">${C[i][0]}</text>`});
+h+=`<polygon points="${T.map(q=>q.join(',')).join(' ')}" fill="none" stroke="#1c2a24" stroke-width="2"/>`;
+for(let n=10;n<100;n+=10){let [x,y]=xy(n,100-n,0);h+=`<text x="${x-8}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor">${n}</text>`;[x,y]=xy(0,n,100-n);h+=`<text x="${x}" y="${y+16}" text-anchor="middle" font-size="10" fill="currentColor">${n}</text>`;[x,y]=xy(100-n,0,n);h+=`<text x="${x+8}" y="${y+4}" font-size="10" fill="currentColor">${n}</text>`}
+h+=`<text x="260" y="28" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor">Argile % ↙</text><text x="40" y="450" font-size="13" font-weight="800" fill="currentColor">← Limon %</text><text x="480" y="450" text-anchor="end" font-size="13" font-weight="800" fill="currentColor">Sable % ↗</text>`;
+h+=`<g id="mk"><circle class="ring" r="9" fill="#ef4444"/><circle r="8" fill="#ef4444" stroke="#fff" stroke-width="3"/></g>`;$('tri').innerHTML=h;
+$('sl').innerHTML=[['a','Argile'],['l','Limon'],['s','Sable']].map(([k,n])=>`<div><div class="flex justify-between font-bold mb-1"><span>${n} (%)</span><input type="number" min="0" max="100" id="n_${k}" class="!w-20 text-center" oninput="setv('${k}',this.value)"></div><input type="range" min="0" max="100" id="r_${k}" oninput="setv('${k}',this.value)"></div>`).join('')})();
+function setv(k,x){v[k]=Math.max(0,Math.min(100,+x||0));upd(1)}
+function balance(){const t=v.a+v.l+v.s;if(!t){v={a:34,l:33,s:33}}else{['a','l','s'].forEach(k=>v[k]=Math.round(v[k]/t*1000)/10);const d=Math.round((100-v.a-v.l-v.s)*10)/10;v.l=Math.round((v.l+d)*10)/10}upd();toast('Somme ramenée à 100 %')}
+function upd(keep){['a','l','s'].forEach(k=>{$('r_'+k).value=v[k];if(!keep||document.activeElement!==$('n_'+k))$('n_'+k).value=v[k]});const t=v.a+v.l+v.s;$('sum').innerHTML=Math.abs(t-100)<.05?'<span class="text-emerald-700">Σ = 100 % ✓</span>':'<span class="text-amber-600">Σ = '+Math.round(t*10)/10+' %</span>';
+const [x,y]=xy(v.a,v.l,v.s);$('mk').style.transform=`translate(${x}px,${y}px)`;const k=classify(v.a,v.l,v.s);C.forEach((_,i)=>$('z'+i).classList.toggle('act',i===k));const n=t||1;$('res').innerHTML=card(k,v.a/n*100,v.l/n*100,v.s/n*100);last=k}
+// Carnet
+let E=[];try{E=JSON.parse(localStorage.getItem('agro_h')||'[]')}catch(e){}
+$('f_t').innerHTML=C.map((c,i)=>`<option value="${i}">${c[0]} — ${c[1]}</option>`).join('');
+function fromLab(){$('f_t').value=classify(v.a,v.l,v.s);toast('Texture reprise du triangle')}
+function persist(){try{localStorage.setItem('agro_h',JSON.stringify(E))}catch(e){}}
+function saveH(){const h=$('f_h').value.trim(),d=$('f_d').value.trim();if(!h||!d){toast('Horizon et profondeur requis');return}const k=+$('f_t').value;E.push({h,d,p:$('f_p').value.trim(),k,a:C[k][2],l:C[k][3],s:C[k][4]});E.sort((x,y)=>(parseInt(x.d)||0)-(parseInt(y.d)||0));persist();rh();toast('Horizon « '+h+' » enregistré ✓')}
+function rh(){$('col').innerHTML=E.length?E.map(e=>{const n=(e.d.match(/\d+/g)||[]).map(Number),th=n.length>1?Math.abs(n[1]-n[0]):15;return`<div class="hz" style="height:${Math.max(44,Math.min(160,th*2.2))}px;background:${C[e.k][5]}">${e.h} · ${C[e.k][0]} · ${e.d}</div>`}).join(''):'<p class="p-4 mut text-sm">Aucun horizon enregistré.</p>';
+$('lst').innerHTML=E.map((e,i)=>`<div class="flex justify-between py-1 border-b border-black/10"><span>${e.h} — ${e.d} ${e.p?'('+e.p+')':''} · <b>${C[e.k][0]}</b></span><button onclick="E.splice(${i},1);persist();rh()" aria-label="Supprimer">🗑️</button></div>`).join('')}
+function csv(){if(!E.length){toast('Rien à exporter');return}const r=[['Horizon','Profondeur','Parcelle','Code GEPPA','Texture','Argile %','Limon %','Sable %'],...E.map(e=>[e.h,e.d,e.p,C[e.k][0],C[e.k][1],e.a,e.l,e.s])].map(x=>x.join(';')).join('\n');
+try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+r],{type:'text/csv'}));a.download='profil-geppa.csv';a.click()}catch(e){}
+try{navigator.clipboard.writeText(r)}catch(e){}toast('CSV exporté (et copié)')}
+rq();upd();rh();
+</script></body></html>
